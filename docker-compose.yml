@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+    php-fpm:
+        container_name: php-fpm-simple
+        build:
+            context: .
+            dockerfile: ./docker/php-fpm/Dockerfile
+            args:
+                - PUID=${PUID}
+                - PGID=${PGID}
+                - INSTALL_XDEBUG=${INSTALL_XDEBUG}
+        depends_on:
+            - mysql
+            - redis
+        volumes:
+            - ./:/var/www/:rw
+
+    nginx:
+        container_name: nginx-simple
+        build:
+            context: docker/nginx
+        ports:
+            - ${NGINX_HOST_HTTP_PORT}:80
+        volumes:
+            - ./:/var/www:rw
+        depends_on:
+            - php-fpm
+
+    mysql:
+        container_name: mysql-simple
+        build:
+            context: docker/mysql
+        ports:
+            - ${DB_PORT}:3306
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        volumes:
+            - db_data:/var/lib/mysql:rw
+
+    redis:
+        container_name: redis-simple
+        build:
+            context: docker/redis
+        ports:
+            - ${REDIS_PORT}:6379
+        command: redis-server --save 20 1 --loglevel warning
+
+        volumes:
+            - redis_data:/data
+
+volumes:
+    db_data:
+    redis_data:
